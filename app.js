@@ -81,12 +81,25 @@ const apiFetch = async (path, options = {}) => {
   const url = `http://localhost:3000${path}`;
   const config = { headers: { 'Content-Type': 'application/json' }, ...options };
   if (config.body && typeof config.body !== 'string') config.body = JSON.stringify(config.body);
-  const res = await fetch(url, config);
+
+  let res;
+  try {
+    res = await fetch(url, config);
+  } catch (err) {
+    const msg = 'Cannot reach backend. Please start server at http://localhost:3000 and refresh.';
+    throw new Error(`${msg} (${err.message})`);
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `API error ${res.status}`);
   }
-  return res.json();
+
+  try {
+    return await res.json();
+  } catch (err) {
+    throw new Error('Invalid JSON response from API: ' + err.message);
+  }
 };
 
 const saveState = async () => {
