@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decentralized Carbon Credit Marketplace</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1>CarbonChain</h1>
+        <p>Decentralized Carbon Credit Marketplace</p>
+      </div>
+      <nav class="nav-links">
+        <!-- Generate / Verify / Marketplace links removed as requested -->
+      </nav>
+    </header>
+
+    <main>
+      <section id="authPanel" class="panel centered-card">
+        <h1>Create An Account</h1>
+        <p class="subtitle">Create an account to enjoy all the services without any ads for free!</p>
+
+        <div class="auth-block register-block">
+          <div class="auth-fields">
+            <input id="regUsernameInput" type="text" placeholder="Email Address or Username" />
+            <input id="regPasswordInput" type="password" placeholder="Password" />
+            <select id="regRoleSelect">
+              <option value="buyer">Buyer</option>
+              <option value="seller">Seller</option>
+            </select>
+            <button id="registerBtn" class="btn btn-primary">Create Account</button>
+          </div>
+        </div>
+
+        <p class="small" style="text-align:center; margin-top:10px;">Already have an account? <a href="#" id="showLoginLink" class="link-btn">Sign in</a></p>
+
+        <div class="auth-block login-block hidden" id="loginBlock">
+          <h3>Sign In</h3>
+          <div class="auth-fields">
+            <input id="usernameInput" type="text" placeholder="Username" />
+            <input id="passwordInput" type="password" placeholder="Password" />
+            <button id="loginBtn" class="btn btn-secondary">Sign In</button>
+          </div>
+        </div>
+
+        <button id="logoutBtn" class="btn hidden" style="margin-top: 12px; width: 100%;">Logout</button>
+        <div id="loginMessage" class="small" style="margin-top: 10px;"></div>
+      </section>
+
+      <section id="dashboard" class="dashboard hidden" aria-label="User dashboard">
+        <div class="dashboard-header">
+          <div>
+            <h3 id="dashboardTitle">User Dashboard</h3>
+            <p id="welcomeText"></p>
+          </div>
+          <div id="roleBanner" class="badge"></div>
+        </div>
+
+        <div class="panel">
+          <h4>User Profile</h4>
+          <div id="profileDetails"></div>
+        </div>
+
+        <div class="panel">
+          <h4>Activity Feed</h4>
+          <ul id="activityLog"></ul>
+        </div>
+      </section>
+
+      <section id="activity" class="activity">
+        <h3>Activity Feed</h3>
+        <ul id="activityLog"></ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>2026 Build for Bengaluru 2.0 • Green-tech & Sustainability • Prototype</p>
+    </footer>
+  </div>
+</body>
+</html>
