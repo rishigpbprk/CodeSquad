@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const app = express();
 app.use(cors());
 app.use(express.json());
+const path = require('path');
+app.use(express.static(__dirname));
 
 const mongoUrl = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/carbon_market';
 mongoose.connect(mongoUrl)
