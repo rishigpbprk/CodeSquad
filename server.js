@@ -141,6 +141,38 @@ app.post('/api/login', async (req, res) => {
   res.json({ success: true, user });
 });
 
+app.delete('/api/users/:username', async (req, res) => {
+  const deletionActor = (req.body && req.body.actor) ? req.body.actor.toLowerCase() : null;
+  const target = req.params.username ? req.params.username.toLowerCase() : null;
+
+  if (!deletionActor || !target) {
+    return res.status(400).json({ error: 'Missing actor or username' });
+  }
+
+  const actor = await User.findOne({ username: deletionActor });
+  if (!actor || actor.role !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can delete accounts' });
+  }
+
+  if (target === 'admin') {
+    return res.status(400).json({ error: 'Cannot delete admin account' });
+  }
+
+  const user = await User.findOne({ username: target });
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  if ((user.creditsBought || 0) !== 0 || (user.creditsSold || 0) !== 0) {
+    return res.status(400).json({ error: 'Only accounts with zero activity can be deleted' });
+  }
+
+  await User.deleteOne({ username: target });
+  await Ledger.create({ timestamp: new Date().toLocaleTimeString(), tx: `${deletionActor} deleted user ${target}` });
+
+  res.json({ success: true });
+});
+
 app.post('/api/credits', async (req, res) => {
   const { projectName, projectType, impact, owner } = req.body;
   if (!projectName || !projectType || !impact || !owner) {
@@ -199,9 +231,19 @@ app.put('/api/credits/:id/purchase', async (req, res) => {
 app.delete('/api/credits/:id', async (req, res) => {
   const { id } = req.params;
   const { actor } = req.body;
+  if (!actor) return res.status(400).json({ error: 'Missing actor' });
+
   const credit = await Credit.findOne({ id });
   if (!credit) return res.status(404).json({ error: 'Not found' });
-  if (actor !== 'admin' && actor !== credit.owner) return res.status(403).json({ error: 'Forbidden' });
+
+  const requestor = await User.findOne({ username: actor.toLowerCase() });
+  if (!requestor || requestor.role !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can delete credit listings' });
+  }
+
+  if ((credit.credits || 0) > 0) {
+    return res.status(400).json({ error: 'Only zero-balance credits can be deleted' });
+  }
 
   await Credit.deleteOne({ id });
   await Ledger.create({ timestamp: new Date().toLocaleTimeString(), tx: `${actor} deleted ${credit.projectName}` });

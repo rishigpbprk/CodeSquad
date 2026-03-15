@@ -361,18 +361,77 @@ const renderRoleSection = () => {
 
   if (currentUser.role === 'admin') {
     const pendingCount = creditPool.filter((c) => !c.verified && c.status === 'pending').length;
+    const managedUsers = users.filter((u) => u.username.toLowerCase() !== currentUser.username.toLowerCase());
+
     roleSection.innerHTML = `
       <div><strong>Admin Panel</strong></div>
       <div>Pending approval items: <strong>${pendingCount}</strong></div>
       <div>Use the marketplace panel to Approve / Decline, and add/min credits on verified assets.</div>
       <button id="toMarketplace" class="btn btn-primary" style="margin-top: 8px;">Go to Marketplace</button>
+      <div style="margin-top:14px;"><strong>User Accounts</strong></div>
+      <div id="adminUserList" style="margin-top: 8px;"></div>
     `;
+
     const toMarketplace = document.getElementById('toMarketplace');
     if (toMarketplace) toMarketplace.addEventListener('click', () => switchSection('marketplace'));
+
+    const userList = document.getElementById('adminUserList');
+    if (userList) {
+      if (!managedUsers.length) {
+        userList.innerHTML = '<p>No other registered users found.</p>';
+      } else {
+        userList.innerHTML = '';
+        managedUsers.forEach((u) => {
+          const balance = (u.creditsBought || 0) - (u.creditsSold || 0);
+          const row = document.createElement('div');
+          row.style.borderBottom = '1px solid #ccc';
+          row.style.padding = '6px 0';
+          row.innerHTML = `
+            <strong>${u.username}</strong> (${translateRole(u.role)})<br>
+            bought: ${u.creditsBought || 0}, sold: ${u.creditsSold || 0}, balance: ${balance}
+          `;
+
+          if (u.role !== 'admin' && (u.creditsBought || 0) === 0 && (u.creditsSold || 0) === 0) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-secondary';
+            btn.textContent = 'Delete account';
+            btn.style.marginLeft = '10px';
+            btn.addEventListener('click', () => deleteAccount(u.username));
+            row.appendChild(btn);
+          } else {
+            const statusText = document.createElement('span');
+            statusText.style.marginLeft = '10px';
+            statusText.style.color = '#666';
+            statusText.textContent = 'Cannot delete: non-zero activity or admin account';
+            row.appendChild(statusText);
+          }
+
+          userList.appendChild(row);
+        });
+      }
+    }
     return;
   }
 
   roleSection.innerHTML = '<p>Admin has full access to marketplace and analytics.</p>';
+};
+
+const deleteAccount = async (username) => {
+  if (!username || !currentUser) return;
+  const confirmation = confirm(`Delete user account '${username}'? This is permanent.`);
+  if (!confirmation) return;
+
+  try {
+    await apiFetch(`/api/users/${encodeURIComponent(username)}`, {
+      method: 'DELETE',
+      body: { actor: currentUser.username }
+    });
+    log(`Admin deleted account ${username}.`, false);
+    await loadState();
+    setAuthUI();
+  } catch (err) {
+    alert(`Failed to delete user: ${err.message}`);
+  }
 };
 
 // Verification workflow removed per request (generate/verify/marketplace removed).
@@ -604,11 +663,59 @@ const renderMarketplace = () => {
         });
       }
 
+      if (remaining === 0) {
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'btn btn-danger';
+        btnDelete.style.marginTop = '6px';
+        btnDelete.textContent = 'Delete zero-balance listing';
+        btnDelete.addEventListener('click', async () => {
+          if (!confirm(`Delete listing ${item.projectName} (ID ${item.id})?`)) return;
+          try {
+            await apiFetch(`/api/credits/${item.id}`, { method: 'DELETE', body: { actor: currentUser.username } });
+            log(`Admin deleted zero-balance credit listing ${item.projectName}.`, false);
+            await loadState(); setAuthUI();
+          } catch (err) {
+            alert(`Cannot delete listing: ${err.message}`);
+          }
+        });
+        adminControls.appendChild(btnDelete);
+      }
+
       card.appendChild(adminControls);
     }
 
     marketEl.appendChild(card);
   });
+
+  if (currentUser && currentUser.role === 'admin') {
+    const bankAccountsSection = document.createElement('div');
+    bankAccountsSection.className = 'panel';
+    bankAccountsSection.style.marginTop = '14px';
+
+    const zeroBankUsers = users.filter((u) => u.role !== 'admin' && (u.creditsBought || 0) === 0 && (u.creditsSold || 0) === 0);
+    if (!zeroBankUsers.length) {
+      bankAccountsSection.innerHTML = '<h4>Admin Bank-zero Users</h4><p>No zero-bank users found.</p>';
+    } else {
+      const rows = zeroBankUsers.map((u) => `
+        <div class="small" style="margin-bottom:8px;">
+          <strong>${u.username}</strong> (${translateRole(u.role)})
+          <button class="btn btn-danger" data-delete-user="${u.username}" style="margin-left:10px;">Delete account</button>
+        </div>
+      `).join('');
+      bankAccountsSection.innerHTML = `<h4>Admin Bank-zero Users</h4>${rows}`;
+
+      bankAccountsSection.querySelectorAll('[data-delete-user]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userToDelete = btn.getAttribute('data-delete-user');
+          if (!userToDelete) return;
+          if (!confirm(`Delete user ${userToDelete}? Requires zero bank balance.`)) return;
+          await deleteAccount(userToDelete);
+        });
+      });
+    }
+
+    marketEl.parentNode.insertBefore(bankAccountsSection, marketEl.nextSibling);
+  }
 };
 
 const getTypeLabel = (value) => {
