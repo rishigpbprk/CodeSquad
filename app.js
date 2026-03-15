@@ -78,7 +78,7 @@ const simpleHash = (text) => {
 };
 
 const apiFetch = async (path, options = {}) => {
-  const url = `http://localhost:3000${path}`;
+  const url = `http://localhost:3000 ${path}`;
   const config = { headers: { 'Content-Type': 'application/json' }, ...options };
   if (config.body && typeof config.body !== 'string') config.body = JSON.stringify(config.body);
 
@@ -628,6 +628,7 @@ const renderMarketplace = () => {
           await loadState(); setAuthUI();
         });
       }
+      
 
       if (btnAdd) {
         btnAdd.addEventListener('click', async () => {

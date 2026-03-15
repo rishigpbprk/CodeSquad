@@ -8,7 +8,7 @@ app.use(express.json());
 const path = require('path');
 app.use(express.static(__dirname));
 
-const mongoUrl = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/carbon_market';
+const mongoUrl = process.env.MONGODB_URI || 'mongodb+srv://carbonuser:carbon123@cluster0.kre59xj.mongodb.net/?appName=Cluster0';
 mongoose.connect(mongoUrl)
   .then(() => console.log(`MongoDB connected: ${mongoUrl}`))
   .catch((err) => {
